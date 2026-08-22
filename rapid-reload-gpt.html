@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Rapid Reload Calculator | PeakFuelling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wa-bg:#0b141a;--wa-header:#1a1a2e;--wa-input-bg:#2a3942;
+  --wa-out:#1a1a2e;--wa-in:#16213e;--wa-text:#e9edef;--wa-muted:#8696a0;
+  --wa-divider:rgba(240,235,224,.1);
+  --gold:#c9a84c;--gold-dim:rgba(201,168,76,.15);--gold-muted:rgba(201,168,76,.55);
+  --cream:#f0ebe0;--line:rgba(240,235,224,.12);
+  --bg-hero:#152a1e;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--wa-bg);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;height:100dvh;overflow:hidden;}
+
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(160deg,#0b141a 0%,#1a1a2e 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;z-index:100;}
+.gate-logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.12em;color:var(--cream);margin-bottom:4px;}
+.gate-sub{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:2.5rem;}
+.gate-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,6vw,2.8rem);letter-spacing:.06em;color:var(--cream);line-height:1;margin-bottom:.8rem;}
+.gate-desc{font-size:.85rem;color:var(--wa-muted);margin-bottom:2rem;max-width:320px;line-height:1.6;}
+.gate-input{width:100%;max-width:300px;background:rgba(240,235,224,.06);border:1px solid var(--gold-muted);color:var(--cream);font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:600;letter-spacing:.3em;text-transform:uppercase;padding:.9rem 1.2rem;text-align:center;outline:none;border-radius:2px;transition:border-color .2s;margin-bottom:.8rem;}
+.gate-input::placeholder{color:var(--wa-muted);letter-spacing:.15em;font-size:.85rem;text-transform:none;}
+.gate-input:focus{border-color:var(--gold);}
+.gate-input.err{border-color:#e74c3c;animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.gate-btn{width:100%;max-width:300px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.22em;color:#0b141a;background:var(--gold);border:none;padding:1rem;cursor:pointer;border-radius:2px;transition:opacity .2s;}
+.gate-btn:hover{opacity:.88;}
+.gate-error{font-size:.8rem;color:#e74c3c;margin-top:.5rem;min-height:1.2rem;}
+.gate-note{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--wa-muted);margin-top:1.5rem;opacity:.6;}
+
+/* APP */
+#app{display:flex;flex-direction:column;height:100dvh;}
+.wa-header{background:var(--wa-header);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-bottom:1px solid var(--wa-divider);}
+.wa-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#8b6914);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#0b141a;flex-shrink:0;letter-spacing:.04em;}
+.wa-info{flex:1;}
+.wa-name{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--cream);line-height:1.2;}
+.wa-badge{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#0b141a;background:var(--gold);padding:2px 7px;border-radius:2px;display:inline-block;margin-top:2px;}
+.wa-status{font-size:11px;color:var(--gold-muted);margin-top:3px;display:flex;align-items:center;gap:4px;}
+.wa-online-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.wa-chat{flex:1;overflow-y:auto;padding:12px 16px 8px;display:flex;flex-direction:column;gap:2px;background-color:var(--wa-bg);background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23182229' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
+.wa-chat::-webkit-scrollbar{width:3px;}
+.wa-chat::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:2px;}
+.wa-date-div{text-align:center;margin:8px 0;}
+.wa-date-div span{font-size:12px;color:var(--wa-muted);background:rgba(11,20,26,.85);padding:4px 10px;border-radius:8px;display:inline-block;}
+.wa-row{display:flex;margin-bottom:2px;}
+.wa-row.out{justify-content:flex-end;}
+.wa-row.in{justify-content:flex-start;}
+.wa-row.out+.wa-row.in,.wa-row.in+.wa-row.out{margin-top:6px;}
+.wa-bub{max-width:72%;padding:8px 12px 6px;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.55;color:var(--wa-text);position:relative;word-wrap:break-word;animation:waIn .15s ease forwards;}
+@keyframes waIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.wa-row.out .wa-bub{background:var(--wa-out);border-radius:8px 8px 2px 8px;border:1px solid rgba(201,168,76,.15);}
+.wa-row.in .wa-bub{background:var(--wa-in);border-radius:8px 8px 8px 2px;border:1px solid rgba(240,235,224,.06);}
+.wa-row.out .wa-bub::after{content:'';position:absolute;bottom:0;right:-8px;width:0;height:0;border-style:solid;border-width:0 0 10px 10px;border-color:transparent transparent var(--wa-out) transparent;}
+.wa-row.in .wa-bub::after{content:'';position:absolute;bottom:0;left:-8px;width:0;height:0;border-style:solid;border-width:0 10px 10px 0;border-color:transparent var(--wa-in) transparent transparent;}
+.wa-bub p{margin-bottom:6px;}
+.wa-bub p:last-child{margin-bottom:0;}
+.wa-bub .mh{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.08em;color:var(--gold);margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid rgba(201,168,76,.2);}
+.wa-bub .mh:first-child{margin-top:0;}
+.wa-bub strong{font-weight:600;color:var(--cream);}
+.wa-bub ul,.wa-bub ol{padding-left:18px;margin-bottom:6px;}
+.wa-bub li{margin-bottom:3px;line-height:1.5;}
+.wa-bub .pf-tag{margin-top:10px;padding-top:8px;border-top:1px solid rgba(201,168,76,.15);font-size:11px;color:var(--gold-muted);font-style:italic;}
+.wa-meta{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:3px;}
+.wa-time{font-size:11px;color:rgba(134,150,160,.7);}
+.wa-tick{color:var(--gold);font-size:12px;}
+.wa-typing-row{display:flex;justify-content:flex-start;margin-bottom:4px;}
+.wa-typing-bub{background:var(--wa-in);padding:12px 16px;border-radius:8px 8px 8px 2px;border:1px solid rgba(240,235,224,.06);display:flex;gap:4px;align-items:center;}
+.wa-typing-bub span{width:7px;height:7px;border-radius:50%;background:var(--gold-muted);animation:waDot 1.3s infinite;}
+.wa-typing-bub span:nth-child(2){animation-delay:.2s;}
+.wa-typing-bub span:nth-child(3){animation-delay:.4s;}
+@keyframes waDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.wa-chips{display:flex;flex-wrap:wrap;gap:7px;padding:5px 0 4px;animation:waIn .2s ease forwards;}
+.wa-chip{background:transparent;border:1.5px solid var(--gold-muted);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 15px;border-radius:20px;cursor:pointer;transition:background .18s,color .18s,border-color .18s;white-space:nowrap;}
+.wa-chip:hover,.wa-chip:active{background:var(--gold);color:#0b141a;border-color:var(--gold);}
+.wa-input-bar{background:var(--wa-header);padding:8px 12px;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;border-top:1px solid var(--wa-divider);}
+.wa-text-wrap{flex:1;background:var(--wa-input-bg);border-radius:24px;padding:10px 18px;display:flex;align-items:center;}
+.wa-text-wrap textarea{width:100%;background:transparent;border:none;outline:none;color:var(--wa-text);font-family:'DM Sans',sans-serif;font-size:15px;resize:none;max-height:120px;min-height:22px;line-height:1.4;display:block;}
+.wa-text-wrap textarea::placeholder{color:var(--wa-muted);}
+.wa-send{width:48px;height:48px;border-radius:50%;background:var(--gold);color:#0b141a;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .18s,transform .1s;}
+.wa-send:disabled{background:#2a3942;color:var(--wa-muted);cursor:not-allowed;}
+.wa-send:not(:disabled):hover{opacity:.88;}
+.wa-send:not(:disabled):active{transform:scale(.95);}
+@media(max-width:480px){.wa-bub{max-width:86%;}.wa-chat{padding:8px 10px 6px;}}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="gate-logo">PeakFuelling</div>
+  <div class="gate-sub">Full 90 Formula</div>
+  <div class="gate-title">The Rapid Reload Calculator</div>
+  <p class="gate-desc">Enter your access code to build your post-match recovery protocol.</p>
+  <input class="gate-input" type="text" id="codeInput" placeholder="Enter access code" autocomplete="off" autocorrect="off" spellcheck="false">
+  <button class="gate-btn" onclick="checkCode()">Enter</button>
+  <div class="gate-error" id="gateError"></div>
+  <p class="gate-note">Access code updated monthly. Check your WhatsApp from Liam.</p>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <div class="wa-header">
+    <div class="wa-avatar">LC</div>
+    <div class="wa-info">
+      <div class="wa-name">Liam Carroll Nutrition</div>
+      <div class="wa-badge">Rapid Reload Calculator</div>
+      <div class="wa-status"><div class="wa-online-dot"></div>Post-match recovery protocol</div>
+    </div>
+  </div>
+  <div class="wa-chat" id="chat">
+    <div class="wa-date-div"><span>Today</span></div>
+  </div>
+  <div class="wa-input-bar">
+    <div class="wa-text-wrap">
+      <textarea id="input" placeholder="Message" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="wa-send" id="sendBtn" onclick="sendFromInput()" disabled aria-label="Send">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const ACCESS_CODE = "FULL90-AUG26";
+
+const SYSTEM_PROMPT = `You are a post-match recovery nutrition assistant for PeakFuelling, run by Liam Carroll (MSc Sports Nutrition, SENr Registered). Your only job is to build a personalised post-match recovery protocol for the player based on what they tell you about the game.
+
+PERSONALITY: Direct, knowledgeable, like a nutritionist mate. Short WhatsApp-style messages. Casual but credible. Never use em dashes. No waffle.
+
+STRICT RULES:
+- You ONLY answer questions about post-match recovery nutrition.
+- You ONLY use the evidence base provided below. Do not draw on any external knowledge.
+- If asked about something outside post-match recovery nutrition, say: "That is outside what I cover here. Message Liam directly on WhatsApp."
+- Never make up studies, dosages, or claims not in the evidence base.
+- Once you have all the information, deliver the full protocol clearly. Do not ask unnecessary follow-up questions.
+- Always end the protocol with: "Built by PeakFuelling."
+
+CROSS-REFERRALS:
+- If someone asks about matchday nutrition, pre-match meals, meal planning, or weekly fuelling, say: "That is the meal planner's territory. Head to meal.peakfuelling.com for that."
+- If someone asks about supplements in isolation outside of recovery context, say: "The Supplement Cheatsheet covers that. Head to supp.peakfuelling.com."
+
+LOOP BEHAVIOUR:
+- Collect ALL information needed in as few messages as possible. Where you can ask two things in one message, do it.
+- Once the protocol is delivered, always follow up with: "Any questions on the protocol, or anything you want to adjust?" Keep going until they are done.
+- If they have no more questions, say: "All good. Message Liam directly on 07956 658150 if anything else comes up."
+- Never end the conversation cold.
+
+WHAT TO COLLECT - get everything in as few messages as possible. Ask multiple things in one message where logical. Only ask what you do not already know:
+1. Bodyweight in kg and minutes played (ask together)
+2. Match intensity (easy, moderate, or brutal) and position (ask together)
+3. Single or double game week - if double, ask when the next match is in the same message
+4. Any knocks and any dietary restrictions (ask together)
+
+Once you have all of this, build the full protocol immediately. No more questions.
+
+INFER: If they say "played 90" assume 90 minutes. If they say "midfield" assume midfielder. If they say "smashed" or "tough game" or "absolutely cooked" assume brutal. If they say "no restrictions" skip dietary question. If they volunteer information early, use it and skip that question. Extract everything you can from their opening message before asking anything.
+
+PROTOCOL STRUCTURE - always cover all three windows:
+
+**0 TO 2 HOURS POST-MATCH**
+**MATCH EVENING**
+**24 HOURS POST-MATCH**
+
+EVIDENCE BASE:
+
+CARBOHYDRATE:
+- Start carbohydrate intake within 20 minutes of the final whistle. Glycogen-synthesising enzymes are most active immediately post-match. Delaying by 2 hours results in 45% lower muscle glycogen at 4 hours post-exercise (Ivy et al., 1988).
+- Immediate target: 1 to 1.2g per kg bodyweight per hour in the first hour.
+- Daily target single game week: 6 to 8g per kg bodyweight.
+- Daily target double game week: 8 to 10g per kg bodyweight. Hit the upper end. Every meal must include a significant carbohydrate source. White rice, pasta, bread, and fruit juice are the fastest options.
+- High glycaemic index foods preferred in the immediate window (white bread, white rice, sports drinks, fruit juice) as they accelerate muscle glycogen resynthesis in the first 6 hours.
+- Double game week: white carbs only in the immediate window. No high-fibre or fat-heavy food as they slow gastric emptying.
+- Combine carbohydrate with protein in the immediate window to enhance glycogen resynthesis beyond carbs alone.
+
+PROTEIN:
+- Consume 40g of protein as soon as possible post-match. 40g stimulates greater myofibrillar protein synthesis than 20g regardless of lean body mass (Macnaughton et al., 2016).
+- Leucine is the key driver. Whey protein is preferred for post-match (fastest absorbed, highest leucine). Liquid protein absorbed faster than solid post-exercise.
+- Daily target: 1.5 to 2g per kg bodyweight spread across 5 to 6 meals of 20 to 40g each, spaced approximately 3 hours apart.
+- Pre-sleep: 30 to 40g casein before bed supports overnight muscle repair (Trommelen and Van Loon, 2016). Cottage cheese (200g) is the most practical food source. This is not optional.
+- Plant-based players: soy protein or pea and rice combination achieve equivalent outcomes. Large portions of tofu, edamame, or plant-based protein shakes.
+
+FLUID:
+- Sweat rate in football: 1.1 to 3.1 litres per 90 minutes depending on intensity and conditions (Shirreffs et al., 2006).
+- Target: replace 150% of fluid lost spread across 2 to 4 hours. Do not try to drink all of it in 2 hours - that causes GI distress.
+- Aim for roughly 500 to 750ml per hour. Cap at 1500ml in the first 2 hours.
+- Sodium is critical. Sports drinks containing 20 to 50mmol/L sodium are superior to water alone. Without sodium, kidneys excrete fluid before body water is restored.
+- Plain water alone is not ideal for rehydration post-match.
+- Alcohol must be avoided. It directly impairs myofibrillar protein synthesis even when co-ingested with protein (Parr et al., 2014) and exacerbates dehydration.
+
+POSITION ADJUSTMENTS:
+- Goalkeeper: lower carbohydrate needs than outfield players. Focus on protein and fluid over carbohydrate volume.
+- Defender: full glycogen restoration priority. Significant sprint and aerial duel demands.
+- Midfielder: highest distance covered per match. Glycogen depletion will be significant. Carbohydrate restoration is the top priority.
+- Forward or winger: high-speed sprint demands. Fast-twitch muscle fibre depletion requires rapid carbohydrate and protein restoration.
+
+DOUBLE GAME WEEK PROTOCOL:
+- Adaptation is off the table. Rapid glycogen restoration and inflammation management only.
+- Upper end of all carbohydrate targets. Every meal must include carbohydrate.
+- Tart cherry protocol is non-negotiable.
+- 48 hours between matches: white carbs only. Maximum carbohydrate availability at all times. No heavy meals, no alcohol, no high-fibre food.
+- 72 hours between matches: slightly more flexibility but still prioritise speed of glycogen restoration.
+
+SUPPLEMENTS - only mention these, nothing else:
+- Tart cherry concentrate: 30ml twice daily (morning and evening) for 4 to 5 days around the match. Reduces muscle soreness, accelerates recovery, supports sleep quality (Bell et al., 2016). Non-negotiable in double game weeks.
+- Creatine monohydrate: add 3 to 5g to post-match recovery drink. Enhances glycogen resynthesis - 82% greater increase in muscle glycogen when combined with carbohydrate loading in first 24 hours (Roberts et al., 2016). Continue daily.
+- Collagen peptides plus vitamin C: 15g collagen with 50mg vitamin C, 1 hour before any training in the recovery period. Only relevant if the player has taken knocks or has soft tissue stress (Shaw et al., 2017).
+
+AVOID:
+- Alcohol: impairs protein synthesis and dehydration recovery.
+- High-fat, high-fibre meals in the immediate window: slow glycogen resynthesis.
+- Skipping the pre-sleep casein after a brutal match: overnight protein synthesis window is not optional.
+
+FOOD OPTIONS TO SUGGEST (keep it real and practical):
+Immediate carbs: chocolate milk, milkshake, sports drink, banana and honey, bagel with jam, rice cakes, fruit juice, white bread with jam.
+Immediate protein: whey shake, chocolate milk, chicken breast, Greek yoghurt.
+Evening meal: pasta with chicken and tomato sauce, rice and chicken stir fry, salmon and sweet potato (single game week only), turkey bolognese and pasta.
+Pre-sleep protein: cottage cheese, casein shake, Greek yoghurt.
+Plant-based immediate: soy protein shake, edamame and rice, tofu stir fry.
+Dairy-free immediate: chicken breast, tuna wrap, lean beef with rice.`;
+
+function checkCode(){
+  const val=document.getElementById("codeInput").value.trim().toUpperCase();
+  const err=document.getElementById("gateError");
+  if(val===ACCESS_CODE.toUpperCase()){
+    document.getElementById("gate").style.display="none";
+    document.getElementById("app").style.display="flex";
+    setTimeout(()=>addMsg("assistant","Right, let us get your recovery sorted. What is your bodyweight in kg and how many minutes did you play?"),700);
+  }else{
+    document.getElementById("codeInput").classList.add("err");
+    err.textContent="Incorrect code. Check your WhatsApp from Liam.";
+    setTimeout(()=>document.getElementById("codeInput").classList.remove("err"),400);
+  }
+}
+
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.getElementById("gate").style.display!=="none")checkCode();});
+
+function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+
+let msgs=[],loading=false;
+
+const CHIPS=[
+  {m:t=>t.includes("single or double"),c:["Single game week","Double game week"]},
+  {m:t=>t.includes("intensity")&&(t.includes("easy")||t.includes("moderate")||t.includes("brutal")),c:["Easy","Moderate","Brutal"]},
+  {m:t=>t.includes("position")&&t.includes("goalkeeper"),c:["Goalkeeper","Defender","Midfielder","Forward","Winger"]},
+  {m:t=>t.includes("any knocks"),c:["No knocks","Minor knocks","Took a battering"]},
+  {m:t=>t.includes("dietary")||t.includes("restriction"),c:["No restrictions","Dairy-free","Plant-based","Gluten-free"]},
+  {m:t=>t.includes("next match")&&t.includes("hours"),c:["48 hours","72 hours","96 hours"]},
+];
+function getChips(t){const tl=t.toLowerCase();for(const r of CHIPS){if(r.m(tl))return r.c;}return[];}
+
+function formatBubble(text){
+  const mark="Built by PeakFuelling.";let main=text,tag=null;
+  const fi=text.indexOf(mark);if(fi!==-1){main=text.slice(0,fi).trim();tag=text.slice(fi).trim();}
+  let html="";const lines=main.split("\n");let i=0;
+  while(i<lines.length){
+    const l=lines[i].trim();if(!l){i++;continue;}
+    if((l.startsWith("**")&&l.endsWith("**")&&l.length>4)||l.startsWith("## ")||l.startsWith("### ")){
+      html+=`<div class="mh">${esc(l.replace(/^#+\s*/,"").replace(/^\*\*|\*\*$/g,""))}</div>`;
+    }else if(l.startsWith("- ")||l.startsWith("* ")){
+      html+="<ul>";
+      while(i<lines.length&&(lines[i].trim().startsWith("- ")||lines[i].trim().startsWith("* "))){html+=`<li>${inl(lines[i].trim().slice(2))}</li>`;i++;}
+      html+="</ul>";continue;
+    }else if(/^\d+\.\s/.test(l)){
+      html+="<ol>";
+      while(i<lines.length&&/^\d+\.\s/.test(lines[i].trim())){html+=`<li>${inl(lines[i].trim().replace(/^\d+\.\s/,""))}</li>`;i++;}
+      html+="</ol>";continue;
+    }else{html+=`<p>${inl(l)}</p>`;}
+    i++;
+  }
+  if(tag)html+=`<div class="pf-tag">${esc(tag)}</div>`;
+  return html;
+}
+function inl(t){return esc(t).replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");}
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function scrollBottom(){const c=document.getElementById("chat");c.scrollTop=c.scrollHeight;}
+
+function addMsg(role,content){
+  const ex=document.getElementById("chipRow");if(ex)ex.remove();
+  const row=document.createElement("div");row.className=`wa-row ${role==="user"?"out":"in"}`;
+  const bub=document.createElement("div");bub.className="wa-bub";
+  if(role==="user"){bub.textContent=content;}else{bub.innerHTML=formatBubble(content);}
+  const meta=document.createElement("div");meta.className="wa-meta";
+  const t=document.createElement("span");t.className="wa-time";t.textContent=nowTime();
+  meta.appendChild(t);
+  if(role==="user"){const tick=document.createElement("span");tick.className="wa-tick";tick.innerHTML="&#10003;&#10003;";meta.appendChild(tick);}
+  const wrap=document.createElement("div");wrap.style.cssText="display:flex;flex-direction:column;max-width:72%;";
+  wrap.appendChild(bub);wrap.appendChild(meta);
+  row.appendChild(wrap);
+  document.getElementById("chat").appendChild(row);
+  if(role==="assistant"){
+    const chips=getChips(content);
+    if(chips.length){
+      const cr=document.createElement("div");cr.className="wa-chips";cr.id="chipRow";
+      chips.forEach(c=>{const b=document.createElement("button");b.className="wa-chip";b.textContent=c;b.onclick=()=>send(c);cr.appendChild(b);});
+      document.getElementById("chat").appendChild(cr);
+    }
+  }
+  scrollBottom();
+}
+
+function showTyping(){
+  const row=document.createElement("div");row.className="wa-typing-row";row.id="typing";
+  row.innerHTML=`<div class="wa-typing-bub"><span></span><span></span><span></span></div>`;
+  document.getElementById("chat").appendChild(row);scrollBottom();
+}
+function hideTyping(){const t=document.getElementById("typing");if(t)t.remove();}
+
+async function send(text){
+  text=text.trim();if(!text||loading)return;
+  msgs.push({role:"user",content:text});addMsg("user",text);
+  const inp=document.getElementById("input");inp.value="";inp.style.height="22px";
+  document.getElementById("sendBtn").disabled=true;loading=true;showTyping();
+  try{
+    const r=await fetch("/.netlify/functions/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system:SYSTEM_PROMPT,messages:msgs})});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    const reply=d.content?.[0]?.text||"Something went wrong. Try again.";
+    msgs.push({role:"assistant",content:reply});hideTyping();addMsg("assistant",reply);
+  }catch(e){
+    hideTyping();const err="Error: "+(e.message||"Connection issue.");
+    msgs.push({role:"assistant",content:err});addMsg("assistant",err);
+  }
+  loading=false;
+  document.getElementById("sendBtn").disabled=!document.getElementById("input").value.trim();
+}
+
+function sendFromInput(){send(document.getElementById("input").value);}
+function handleKey(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendFromInput();}}
+function autoResize(el){el.style.height="22px";el.style.height=Math.min(el.scrollHeight,120)+"px";document.getElementById("sendBtn").disabled=!el.value.trim();}
+</script>
+</body>
+</html>
